@@ -1,0 +1,272 @@
+PAGER SCRIPTS LICENSE (PSL) v1.0
+Copyright (c) 2026 Pager Scripts
+All Rights Reserved
+
+    ____  ____ _____ ____  _____
+   / __ \/ __ `/ __ `/ _ \/ ___/
+  / /_/ / /_/ / /_/ /  __/ /
+ / .___/\__,_/\__, /\___/_/
+/_/ SCRIPTS  /____/
+
+
+--------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------
+1. Definitions
+2. License Grant
+3. Permissions
+4. Restrictions
+5. Attribution Requirements
+6. Commercial Usage
+7. Distribution Rules
+8. Modification Policy
+9. Contributor Agreement
+10. Security Policy
+11. Code of Conduct
+12. User Agreement (Website Use)
+13. Privacy & Data Rules
+14. Warranty Disclaimer
+15. Limitation of Liability
+16. Termination of License
+17. Intellectual Property Rights
+18. Trademark Policy
+19. Compliance Requirements
+20. Governing Law
+21. License Versioning
+22. Contact Information
+
+--------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------
+1.1 Software: Pager Scripts, including code, documentation, scripts, assets, designs, and website tools.
+1.2 Author: The creator or maintainers of Pager Scripts.
+1.3 User: Any individual or organization that downloads, runs, modifies, or distributes the software.
+1.4 Distribution: Sharing the software publicly or privately.
+1.5 Modification: Any change made to the original code or assets.
+1.6 Derivative Work: A project based on Pager Scripts or containing its components.
+1.7 License: This Pager Scripts License (PSL).
+
+--------------------------------------------------
+2. LICENSE GRANT
+--------------------------------------------------
+Pager Scripts grants the user a non-exclusive license to:
+- Use the software
+- Study the source code
+- Modify the source code
+- Integrate it into projects
+- Host it on servers
+- Share copies
+This license applies worldwide.
+
+--------------------------------------------------
+3. PERMISSIONS
+--------------------------------------------------
+Users are permitted to:
+1. Use Pager Scripts for personal projects
+2. Use Pager Scripts for educational purposes
+3. Use Pager Scripts in commercial environments
+4. Modify the source code
+5. Publish modified versions
+6. Host Pager Scripts online
+7. Create extensions or plugins
+8. Integrate Pager Scripts with websites
+9. Use Pager Scripts as part of applications
+10. Use Pager Scripts for development tools
+
+--------------------------------------------------
+4. RESTRICTIONS
+--------------------------------------------------
+Users MAY NOT:
+1. Remove license information
+2. Claim Pager Scripts as their own creation
+3. Distribute malware using Pager Scripts
+4. Use Pager Scripts for illegal activities
+5. Use Pager Scripts to exploit systems
+6. Use Pager Scripts to violate privacy laws
+7. Sell the original software without modification
+8. Impersonate Pager Scripts branding
+9. Remove attribution
+10. Misrepresent modified versions as official
+
+--------------------------------------------------
+5. ATTRIBUTION REQUIREMENTS
+--------------------------------------------------
+All distributed versions must include:
+"Powered by Pager Scripts https://yourwebsite.com"
+Attribution must appear in:
+- Documentation
+- Source code
+- Website footer (if used online)
+
+--------------------------------------------------
+6. COMMERCIAL USAGE
+--------------------------------------------------
+Allowed:
+- Sell software built using Pager Scripts
+- Use Pager Scripts in SaaS tools
+- Include Pager Scripts in applications
+Not allowed:
+- Sell Pager Scripts as a standalone product
+- Remove license requirements
+- Misrepresent authorship
+
+--------------------------------------------------
+7. DISTRIBUTION RULES
+--------------------------------------------------
+When distributing Pager Scripts, include:
+- LICENSE.txt
+- README.md
+- SECURITY.md
+- CODE_OF_CONDUCT.md
+- CONTRIBUTING.md
+The license must remain intact.
+
+--------------------------------------------------
+8. MODIFICATION POLICY
+--------------------------------------------------
+Modified versions must:
+1. Clearly mark modifications
+2. Include the original license
+3. Include the modification date
+4. Include the modifier name
+Example:
+Modified by: YourName
+Date: YYYY-MM-DD
+Changes: Added new features
+
+--------------------------------------------------
+9. CONTRIBUTOR AGREEMENT
+--------------------------------------------------
+Contributors agree that:
+- Contributions may be used in Pager Scripts
+- Contributions may be modified by maintainers
+- Contributions become part of the project
+Contributors retain authorship credit.
+
+--------------------------------------------------
+10. SECURITY POLICY
+--------------------------------------------------
+Users must follow responsible security practices.
+Security researchers should:
+1. Report vulnerabilities privately
+2. Allow time for fixes
+3. Avoid exploiting vulnerabilities publicly
+Security reports should include:
+- Vulnerability description
+- Reproduction steps
+- Affected versions
+
+--------------------------------------------------
+11. CODE OF CONDUCT
+--------------------------------------------------
+Participants must:
+- Be respectful
+- Avoid harassment
+- Avoid discrimination
+- Follow project rules
+Unacceptable behavior includes:
+- Harassment
+- Threats
+- Abusive language
+- Hate speech
+Violations may result in removal from the project.
+
+--------------------------------------------------
+12. USER AGREEMENT (WEBSITE USE)
+--------------------------------------------------
+When using Pager Scripts websites or hosted tools, users must accept the terms.
+Users must:
+- Agree to the license
+- Follow platform rules
+- Avoid malicious use
+Websites may display a popup agreement requiring confirmation.
+Example: ☐ I agree to the Pager Scripts License
+
+--------------------------------------------------
+13. PRIVACY & DATA RULES
+--------------------------------------------------
+Pager Scripts itself does not collect user data.
+Websites using Pager Scripts may collect:
+- Analytics
+- Logs
+- User preferences
+Users must follow privacy laws such as GDPR.
+
+--------------------------------------------------
+14. WARRANTY DISCLAIMER
+--------------------------------------------------
+Pager Scripts is provided "AS IS".
+No warranties are provided including:
+- Performance
+- Reliability
+- Security
+- Compatibility
+
+--------------------------------------------------
+15. LIMITATION OF LIABILITY
+--------------------------------------------------
+The author is not liable for:
+- Data loss
+- Financial loss
+- Security breaches
+- Damages caused by the software
+Use at your own risk.
+
+--------------------------------------------------
+16. TERMINATION
+--------------------------------------------------
+This license automatically terminates if:
+- License terms are violated
+- Attribution is removed
+- Illegal usage occurs
+Upon termination, users must stop using the software.
+
+--------------------------------------------------
+17. INTELLECTUAL PROPERTY
+--------------------------------------------------
+Pager Scripts remains the intellectual property of its authors.
+Users receive usage rights only.
+Ownership is not transferred.
+
+--------------------------------------------------
+18. TRADEMARK POLICY
+--------------------------------------------------
+Pager Scripts name and branding may not be used without permission.
+Prohibited uses include:
+- Fake official releases
+- Impersonating the project
+- Misleading branding
+
+--------------------------------------------------
+19. COMPLIANCE
+--------------------------------------------------
+Users must comply with:
+- Local laws
+- International laws
+- Technology regulations
+Illegal usage voids the license.
+
+--------------------------------------------------
+20. GOVERNING LAW
+--------------------------------------------------
+This license is governed by applicable laws where the author resides unless otherwise specified.
+
+--------------------------------------------------
+21. LICENSE VERSIONING
+--------------------------------------------------
+License versions may change.
+Projects may specify: Pager Scripts License v1.0
+Older versions remain valid for previous releases.
+
+--------------------------------------------------
+22. CONTACT
+--------------------------------------------------
+Project Name: Pager Scripts
+Maintainer: (Your Name)
+Website: (Your Website)
+Repository: (GitHub Repo)
+Email: (Contact Email)
+
+--------------------------------------------------
+END OF PAGER SCRIPTS LICENSE
+--------------------------------------------------
