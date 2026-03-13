@@ -1,0 +1,381 @@
+#!/usr/bin/env python3
+"""
+wifi_scanner.py — Scan for nearby WiFi networks
+Supports Windows, Linux, and macOS
+"""
+
+import subprocess
+import platform
+import sys
+import re
+from datetime import datetime
+
+
+OS = platform.system()
+
+
+def clear():
+    subprocess.call("cls" if OS == "Windows" else "clear", shell=True)
+
+
+# ── PARSERS ───────────────────────────────────────────────────────────────────
+
+def scan_windows():
+    """Use netsh on Windows."""
+    try:
+        result = subprocess.run(
+            ["netsh", "wlan", "show", "networks", "mode=bssid"],
+            capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        print("[!] netsh not found. Are you on Windows?")
+        sys.exit(1)
+
+    output = result.stdout
+    networks = []
+    blocks = re.split(r"SSID \d+ :", output)[1:]  # skip header
+
+    for block in blocks:
+        lines = block.strip().splitlines()
+        ssid        = lines[0].strip() if lines else "Hidden"
+        auth        = _extract(block, r"Authentication\s*:\s*(.+)")
+        encryption  = _extract(block, r"Encryption\s*:\s*(.+)")
+        signal      = _extract(block, r"Signal\s*:\s*(.+)")
+        bssids      = re.findall(r"BSSID \d+\s*:\s*([0-9A-Fa-f:]{17})", block)
+        channel     = _extract(block, r"Channel\s*:\s*(\d+)")
+
+        networks.append({
+            "ssid":       ssid or "Hidden",
+            "bssid":      bssids[0] if bssids else "N/A",
+            "signal":     signal or "N/A",
+            "auth":       auth or "N/A",
+            "encryption": encryption or "N/A",
+            "channel":    channel or "N/A",
+            "band":       "N/A",
+        })
+
+    return networks
+
+
+def scan_linux():
+    """Use nmcli on Linux (most distros have it)."""
+    try:
+        result = subprocess.run(
+            ["nmcli", "-t", "-f",
+             "SSID,BSSID,SIGNAL,SECURITY,FREQ,CHAN",
+             "dev", "wifi", "list", "--rescan", "yes"],
+            capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        # Fallback: iwlist
+        return scan_linux_iwlist()
+
+    networks = []
+    for line in result.stdout.strip().splitlines():
+        # nmcli -t separates fields with ':'  (escaped colons in values are '\:')
+        # We split on unescaped colons
+        parts = re.split(r"(?<!\\):", line)
+        parts = [p.replace("\\:", ":").strip() for p in parts]
+        if len(parts) < 6:
+            continue
+        ssid, bssid, signal, security, freq, chan = parts[:6]
+        band = "5 GHz" if freq.startswith("5") else "2.4 GHz"
+        networks.append({
+            "ssid":       ssid or "Hidden",
+            "bssid":      bssid or "N/A",
+            "signal":     signal + "%" if signal else "N/A",
+            "auth":       security or "Open",
+            "encryption": "WPA" if "WPA" in security else ("WEP" if "WEP" in security else "None"),
+            "channel":    chan or "N/A",
+            "band":       band,
+        })
+    return networks
+
+
+def scan_linux_iwlist():
+    """Fallback using iwlist (older systems)."""
+    iface = _get_linux_iface()
+    try:
+        result = subprocess.run(
+            ["sudo", "iwlist", iface, "scan"],
+            capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        print("[!] Neither nmcli nor iwlist found. Install network-manager.")
+        sys.exit(1)
+
+    networks = []
+    for cell in re.split(r"Cell \d+ -", result.stdout)[1:]:
+        ssid       = _extract(cell, r'ESSID:"(.+?)"') or "Hidden"
+        bssid      = _extract(cell, r"Address:\s*([0-9A-Fa-f:]{17})")
+        signal_raw = _extract(cell, r"Signal level=(-?\d+)")
+        signal     = _dbm_to_percent(int(signal_raw)) if signal_raw else "N/A"
+        channel    = _extract(cell, r"Channel[:\s](\d+)")
+        enc        = "Open" if "Encryption key:off" in cell else "Encrypted"
+        auth       = _extract(cell, r"IE: (?:IEEE 802\.11i/)?(.+?)[\r\n]") or enc
+
+        networks.append({
+            "ssid":       ssid,
+            "bssid":      bssid or "N/A",
+            "signal":     f"{signal}%" if isinstance(signal, int) else signal,
+            "auth":       auth.strip(),
+            "encryption": enc,
+            "channel":    channel or "N/A",
+            "band":       "N/A",
+        })
+    return networks
+
+
+def scan_macos():
+    """Use airport on macOS."""
+    airport = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport"
+    try:
+        result = subprocess.run(
+            [airport, "-s"],
+            capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        print("[!] airport utility not found.")
+        sys.exit(1)
+
+    lines = result.stdout.strip().splitlines()
+    if len(lines) < 2:
+        return []
+
+    networks = []
+    # Header line determines column positions
+    header = lines[0]
+    ssid_end   = header.index("SSID") + 4
+    bssid_end  = header.index("BSSID") + 17
+    rssi_end   = header.index("RSSI") + 4
+    chan_end    = header.index("CHANNEL") + 7
+    security_s = header.index("SECURITY")
+
+    for line in lines[1:]:
+        if not line.strip():
+            continue
+        try:
+            ssid     = line[:ssid_end].strip()
+            bssid    = line[ssid_end:bssid_end].strip()
+            rssi_str = line[bssid_end:rssi_end].strip()
+            channel  = line[rssi_end:chan_end].strip()
+            security = line[security_s:].strip() if len(line) > security_s else "N/A"
+            rssi     = int(rssi_str) if rssi_str.lstrip("-").isdigit() else 0
+            signal   = _dbm_to_percent(rssi)
+        except (ValueError, IndexError):
+            continue
+
+        networks.append({
+            "ssid":       ssid or "Hidden",
+            "bssid":      bssid or "N/A",
+            "signal":     f"{signal}%",
+            "auth":       security,
+            "encryption": "WPA" if "WPA" in security else ("WEP" if "WEP" in security else "Open"),
+            "channel":    channel,
+            "band":       "5 GHz" if _is_5ghz_channel(channel) else "2.4 GHz",
+        })
+    return networks
+
+
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+
+def _extract(text, pattern):
+    m = re.search(pattern, text)
+    return m.group(1).strip() if m else None
+
+
+def _dbm_to_percent(dbm):
+    """Convert dBm (-30 best, -90 worst) to 0-100%."""
+    if dbm >= -30:  return 100
+    if dbm <= -90:  return 0
+    return int((dbm + 90) * (100 / 60))
+
+
+def _is_5ghz_channel(channel_str):
+    try:
+        ch = int(re.sub(r"[^0-9]", "", channel_str))
+        return ch > 14
+    except ValueError:
+        return False
+
+
+def _get_linux_iface():
+    try:
+        out = subprocess.check_output(["ip", "-o", "link", "show"], text=True)
+        for line in out.splitlines():
+            if "wlan" in line or "wlp" in line or "wifi" in line:
+                return line.split(":")[1].strip()
+    except Exception:
+        pass
+    return "wlan0"
+
+
+def _signal_bar(signal_str):
+    """Turn a signal percentage string into a bar."""
+    try:
+        val = int(re.sub(r"[^0-9]", "", signal_str))
+    except ValueError:
+        return "??? "
+    filled = round(val / 20)  # 0-5 bars
+    bar = "█" * filled + "░" * (5 - filled)
+    return bar
+
+
+def _signal_color(signal_str):
+    """ANSI color for signal strength."""
+    try:
+        val = int(re.sub(r"[^0-9]", "", signal_str))
+    except ValueError:
+        return "\033[90m"
+    if val >= 70: return "\033[92m"   # green
+    if val >= 40: return "\033[93m"   # yellow
+    return "\033[91m"                 # red
+
+
+# ── DISPLAY ───────────────────────────────────────────────────────────────────
+
+RESET  = "\033[0m"
+BOLD   = "\033[1m"
+DIM    = "\033[2m"
+CYAN   = "\033[96m"
+WHITE  = "\033[97m"
+YELLOW = "\033[93m"
+RED    = "\033[91m"
+GREEN  = "\033[92m"
+BLUE   = "\033[94m"
+
+
+def print_header():
+    print(f"{BOLD}{CYAN}")
+    print("    ____  ____ _____ ____  _____ || Github:")
+    print("   / __ \/ __ `/ __ `/ _ \/ ___/ || Author:ifDeluxe7")
+    print("  / /_/ / /_/ / /_/ /  __/ /     || Version:1.0")
+    print(" / .___/\__,_/\__, /\___/_/      || ------------------")
+    print("/_/ SCRIPTS  /____/              || Wifi Scanner")
+    print(f"{RESET}{DIM}  PagerScripts — WiFi Network Scanner{RESET}")
+    print(f"{DIM}  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  |  OS: {OS}{RESET}")
+    print()
+
+
+def print_networks(networks):
+    if not networks:
+        print(f"  {RED}No networks found. Make sure WiFi is enabled.{RESET}\n")
+        return
+
+    # Sort by signal strength descending
+    def sig_val(n):
+        try: return int(re.sub(r"[^0-9]", "", n["signal"]))
+        except: return 0
+    networks.sort(key=sig_val, reverse=True)
+
+    # Column widths
+    ssid_w = max(len(n["ssid"]) for n in networks) + 2
+    ssid_w = max(ssid_w, 10)
+
+    header = (
+        f"  {BOLD}{WHITE}"
+        f"{'#':<4}"
+        f"{'SSID':<{ssid_w}}"
+        f"{'SIGNAL':<14}"
+        f"{'CHANNEL':<10}"
+        f"{'BAND':<10}"
+        f"{'SECURITY':<20}"
+        f"{'BSSID'}"
+        f"{RESET}"
+    )
+    divider = f"  {DIM}{'─' * (4 + ssid_w + 14 + 10 + 10 + 20 + 19)}{RESET}"
+
+    print(header)
+    print(divider)
+
+    for i, n in enumerate(networks, 1):
+        color  = _signal_color(n["signal"])
+        bar    = _signal_bar(n["signal"])
+        signal = f"{bar} {n['signal']:>4}"
+
+        sec_color = GREEN if "WPA3" in n["auth"] or "WPA2" in n["auth"] else \
+                    YELLOW if "WPA" in n["auth"] else \
+                    RED if "WEP" in n["auth"] else DIM
+
+        print(
+            f"  {DIM}{i:<4}{RESET}"
+            f"{WHITE}{n['ssid']:<{ssid_w}}{RESET}"
+            f"{color}{signal:<14}{RESET}"
+            f"{DIM}{n['channel']:<10}{RESET}"
+            f"{DIM}{n['band']:<10}{RESET}"
+            f"{sec_color}{n['auth']:<20}{RESET}"
+            f"{DIM}{n['bssid']}{RESET}"
+        )
+
+    print(divider)
+    print(f"\n  {DIM}Total: {len(networks)} network(s) found{RESET}\n")
+
+
+def save_results(networks):
+    filename = f"wifi_scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    with open(filename, "w") as f:
+        f.write(f"WiFi Scan — {datetime.now()}\n")
+        f.write(f"OS: {OS}\n\n")
+        f.write(f"{'#':<4}{'SSID':<32}{'SIGNAL':<10}{'CHANNEL':<10}{'BAND':<10}{'SECURITY':<20}{'BSSID'}\n")
+        f.write("─" * 100 + "\n")
+        for i, n in enumerate(networks, 1):
+            f.write(f"{i:<4}{n['ssid']:<32}{n['signal']:<10}{n['channel']:<10}{n['band']:<10}{n['auth']:<20}{n['bssid']}\n")
+    print(f"  {GREEN}Results saved to {filename}{RESET}\n")
+
+
+# ── MAIN ──────────────────────────────────────────────────────────────────────
+
+def main():
+    clear()
+    print_header()
+
+    print(f"  {DIM}Scanning for WiFi networks...{RESET}\n")
+
+    try:
+        if OS == "Windows":
+            networks = scan_windows()
+        elif OS == "Linux":
+            networks = scan_linux()
+        elif OS == "Darwin":
+            networks = scan_macos()
+        else:
+            print(f"  {RED}Unsupported OS: {OS}{RESET}")
+            sys.exit(1)
+    except PermissionError:
+        print(f"  {RED}[!] Permission denied. Try running with sudo/admin.{RESET}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"  {RED}[!] Scan failed: {e}{RESET}")
+        sys.exit(1)
+
+    print_networks(networks)
+
+    if networks:
+        try:
+            choice = input(f"  {DIM}Save results to file? (y/n): {RESET}").strip().lower()
+            if choice == "y":
+                save_results(networks)
+        except KeyboardInterrupt:
+            pass
+
+    # Rescan loop
+    try:
+        while True:
+            choice = input(f"  {DIM}Scan again? (y/n): {RESET}").strip().lower()
+            if choice != "y":
+                break
+            clear()
+            print_header()
+            print(f"  {DIM}Rescanning...{RESET}\n")
+            if OS == "Windows":   networks = scan_windows()
+            elif OS == "Linux":   networks = scan_linux()
+            elif OS == "Darwin":  networks = scan_macos()
+            print_networks(networks)
+    except KeyboardInterrupt:
+        pass
+
+    print(f"\n  {DIM}Goodbye.{RESET}\n")
+
+
+if __name__ == "__main__":
+    main()
